@@ -19,7 +19,7 @@ ui <- fluidPage(
     style = "margin-top: 0px;",
     column(12,
       h2("South Pacific invasives dashboard"),
-      p("This dashboard displays a list of WRiMS species observed in the South Pacific based on OBIS data. Species that have been observed in Fiji are flagged as such. Click the column row to display all occurrence of a species on the map.")
+      p("This dashboard displays a list of WRiMS species observed in the South Pacific based on OBIS data. Species that have been observed in Fiji are flagged as such. Click the row to display all occurrence of a species on the map, or click the scientific name to open the WoRMS page.")
     )
   ),
   fluidRow(
@@ -37,9 +37,10 @@ server <- function(input, output, session) {
   cl_fiji <- checklist(wrims = TRUE, areaid = 68) %>%
     select(scientificName, taxonID, class, order, records)
   
-  cl <- checklist(wrims = TRUE, geometry = "POLYGON ((-210 13, -210 -60, -100 -60, -100 13, -210 13))") %>%
+  cl <- checklist(wrims = TRUE, geometry = "POLYGON ((-215 -62, -215 14, -86 14, -67 -23, -74 -62, -215 -62))") %>%
     select(scientificName, taxonID, class, order, records) %>%
-    mutate(fiji = taxonID %in% cl_fiji$taxonID)
+    mutate(fiji = taxonID %in% cl_fiji$taxonID) %>%
+    mutate(scientificName = paste0("<a href=\"http://www.marinespecies.org/aphia.php?p=taxdetails&id=", taxonID, "#distributions\" target=\"_blank\">", scientificName, "</a>"))
 
   observe({
     selected <- input$mytable_rows_selected
@@ -83,7 +84,7 @@ server <- function(input, output, session) {
       ")
   })
   output$mytable <- renderDataTable(
-    datatable(cl, selection = "single") %>% formatStyle(
+    datatable(cl, selection = "single", escape = FALSE) %>% formatStyle(
       "fiji",
       target = "cell",
       backgroundColor = styleEqual(c(1, 0), c("#ffe6cc", NA))
