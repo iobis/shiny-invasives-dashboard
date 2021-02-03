@@ -16,12 +16,15 @@ ui <- fluidPage(
   useShinyjs(),
   tags$head(tags$script(src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js")),
   fluidRow(
-    style = "margin-top: 20px;",
-    column(12, leafletOutput("mymap"))
+    style = "margin-top: 0px;",
+    column(12,
+      h2("South Pacific invasives dashboard"),
+      p("This dashboard displays a list of WRiMS species observed in the South Pacific based on OBIS data. Species that have been observed in Fiji are flagged as such. Click the column row to display all occurrence of a species on the map.")
+    )
   ),
   fluidRow(
-    style = "margin-top: 20px; margin-bottom: 0px;",
-    column(12, p("This dashboard displays a list of WRiMS species observed in the South Pacific based on OBIS data. Species that have been observed in Fiji are flagged as such. Click the column row to display all occurrence of a species on the map."))
+    style = "margin-top: 20px;",
+    column(12, leafletOutput("mymap"))
   ),
   fluidRow(
     style = "margin-top: 20px; margin-bottom: 10px;",
@@ -68,7 +71,7 @@ server <- function(input, output, session) {
     
   output$mymap <- renderLeaflet({
     leaflet() %>%
-      setView(140, -10, zoom = 3) %>%
+      setView(170, -20, zoom = 3) %>%
       addProviderTiles(providers$Stamen.TonerLite, options = providerTileOptions(noWrap = FALSE)) %>%
       onRender("
         function(el, x) {
