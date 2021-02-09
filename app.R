@@ -42,17 +42,21 @@ server <- function(input, output, session) {
   incProgress(1/4, detail = "Fetching Fiji checklist")
               
   cl_expert <- read.csv("https://raw.githubusercontent.com/iobis/pacman/main/SpeciesLists/SpeciesList.tsv?token=AADXUOMJQ24AIINJURWKUYDAFLISW", sep = "\t") %>%
-    select(taxonID = AphiaID_accepted, references, remarks = taxonRemarks) %>%
+    select(taxonID = AphiaID_accepted, references, remarks = taxonRemarks, scientificName_accepted) %>%
     mutate(taxonID = as.numeric(taxonID)) %>%
-    group_by(taxonID) %>%
+    filter(!is.na(taxonID)) %>%
+    group_by(taxonID, scientificName_accepted) %>%
     summarize(references = paste0(stri_remove_empty_na(references), collapse = "; "), remarks = paste0(stri_remove_empty_na(remarks), collapse = "; "))
   incProgress(1/4, detail = "Fetching priority lists")
   
-  cl <- checklist(wrims = TRUE, geometry = "POLYGON ((-215 -62, -215 14, -86 14, -67 -23, -74 -62, -215 -62))") %>%
+  cl <- checklist(wrims = TRUE, geometry = "POLYGON ((-218 -62, -218 14, -86 14, -67 -23, -74 -62, -218 -62))") %>%
     select(scientificName, taxonID, class, order, records) %>%
-    left_join(cl_expert, by = c("taxonID")) %>%
+    full_join(cl_expert, by = c("taxonID")) %>%
+    mutate(scientificName = ifelse(!is.na(scientificName), scientificName, scientificName_accepted)) %>%
     mutate(fiji = taxonID %in% cl_fiji$taxonID) %>%
-    mutate(scientificName = paste0("<a href=\"http://www.marinespecies.org/aphia.php?p=taxdetails&id=", taxonID, "#distributions\" target=\"_blank\">", scientificName, "</a>"))
+    mutate(south_pacific = (!is.na(records) & records > 0)) %>%
+    mutate(scientificName = paste0("<a href=\"http://www.marinespecies.org/aphia.php?p=taxdetails&id=", taxonID, "#distributions\" target=\"_blank\">", scientificName, "</a>")) %>%
+    select(-scientificName_accepted)
   incProgress(2/4, detail = "Fetching South Pacific checklist")
   
   })
@@ -99,11 +103,17 @@ server <- function(input, output, session) {
       ")
   })
   output$mytable <- renderDataTable(
-    datatable(cl, selection = "single", escape = FALSE) %>% formatStyle(
-      "fiji",
-      target = "cell",
-      backgroundColor = styleEqual(c(1, 0), c("#ffe6cc", NA))
-    )
+    datatable(cl, selection = "single", escape = FALSE) %>%
+      formatStyle(
+        "south_pacific",
+        target = "cell",
+        backgroundColor = styleEqual(c(0, 1), c("#ffe6cc", NA))
+      ) %>%
+      formatStyle(
+        "fiji",
+        target = "cell",
+        backgroundColor = styleEqual(c(1, 0), c("#e6f2ff", NA))
+      )
   )
   
 }
