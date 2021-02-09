@@ -35,21 +35,28 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
+  withProgress(message = "Fetching data", value = 0, {
+    
   cl_fiji <- checklist(wrims = TRUE, areaid = 68) %>%
     select(scientificName, taxonID, class, order, records)
-
+  incProgress(1/4, detail = "Fetching Fiji checklist")
+              
   cl_expert <- read.csv("https://raw.githubusercontent.com/iobis/pacman/main/SpeciesLists/SpeciesList.tsv?token=AADXUOMJQ24AIINJURWKUYDAFLISW", sep = "\t") %>%
     select(taxonID = AphiaID_accepted, references, remarks = taxonRemarks) %>%
     mutate(taxonID = as.numeric(taxonID)) %>%
     group_by(taxonID) %>%
     summarize(references = paste0(stri_remove_empty_na(references), collapse = "; "), remarks = paste0(stri_remove_empty_na(remarks), collapse = "; "))
-    
+  incProgress(1/4, detail = "Fetching priority lists")
+  
   cl <- checklist(wrims = TRUE, geometry = "POLYGON ((-215 -62, -215 14, -86 14, -67 -23, -74 -62, -215 -62))") %>%
     select(scientificName, taxonID, class, order, records) %>%
     left_join(cl_expert, by = c("taxonID")) %>%
     mutate(fiji = taxonID %in% cl_fiji$taxonID) %>%
     mutate(scientificName = paste0("<a href=\"http://www.marinespecies.org/aphia.php?p=taxdetails&id=", taxonID, "#distributions\" target=\"_blank\">", scientificName, "</a>"))
-
+  incProgress(2/4, detail = "Fetching South Pacific checklist")
+  
+  })
+  
   observe({
     selected <- input$mytable_rows_selected
     if (!is.null(selected)) {
